@@ -1,4 +1,5 @@
 import streamlit as st
+st.set_page_config(page_title="Sanat AI", layout="wide") 
 import torch
 import torch.nn as nn
 from torchvision import transforms, models
