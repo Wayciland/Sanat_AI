@@ -5,14 +5,6 @@ import torch.nn as nn
 from torchvision import transforms, models
 from PIL import Image
 import os
-
-# Sayfa Konfigürasyonu
-st.set_page_config(
-    page_title="Sanat AI - Yapay Zekâ Tespit Paneli",
-    page_icon="🎨",
-    layout="centered"
-)
-
 st.title("🎨 Sanat AI - Yapay Zekâ Tespit Paneli")
 st.write("Yüklenen görselin bir **İnsan Çizimi** mi yoksa **Yapay Zekâ üretimi** mi olduğunu analiz eder.")
 
@@ -25,7 +17,7 @@ def load_model():
     if not os.path.exists(model_path):
         return None, device
 
-    model = models.efficientnet_b0()
+    model = models.efficientnet_b0(weights=None)
     in_features = model.classifier[1].in_features
     model.classifier = nn.Sequential(
         nn.Dropout(0.3),
