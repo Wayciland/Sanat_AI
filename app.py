@@ -1,27 +1,37 @@
 import streamlit as st
-import time
-import uuid
+import torch
+import torch.nn as nn
+from torchvision import models, transforms
 from PIL import Image
+import time
 
-st.set_page_config(page_title="Sanat AI - Doğrulama Paneli", layout="wide")
+# --- SAYFA YAPILANDIRMASI ---
+st.set_page_config(
+    page_title="AI vs Human Art Detector",
+    page_icon="🎨",
+    layout="wide"
+)
 
-# CSS ile özel kırmızı/yeşil nokta ışığı stilleri
+# --- OZEL CSS (Tasarim ve Durum Isiklari) ---
 st.markdown("""
     <style>
+    .main {
+        background-color: #0e1117;
+    }
     .status-dot {
-        height: 18px;
-        width: 18px;
+        height: 12px;
+        width: 12px;
         border-radius: 50%;
         display: inline-block;
         margin-right: 8px;
     }
-    .red-dot {
-        background-color: #ff4b4b;
-        box-shadow: 0 0 10px #ff4b4b;
-    }
     .green-dot {
-        background-color: #00c853;
-        box-shadow: 0 0 10px #00c853;
+        background-color: #00ff66;
+        box-shadow: 0 0 8px #00ff66;
+    }
+    .red-dot {
+        background-color: #ff3333;
+        box-shadow: 0 0 8px #ff3333;
     }
     .gray-dot {
         background-color: #888888;
@@ -29,87 +39,99 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🛡️ Sanat AI - Görsel Doğrulama Sistemi")
-
-# Tasaıma Uygun 2 Ana Sütun Düzeni
-col_left, col_right = st.columns([1.2, 1], gap="large")
-
-with col_left:
-    # 1. Görseli Sürükle / Yükle Alanı
-    st.subheader("🖼️ Görseli Sürükle")
-    uploaded_file = st.file_uploader(
-        "Görselinizi buraya sürükleyin veya bilgisayardan seçin", 
-        type=["jpg", "jpeg", "png", "webp"],
-        label_visibility="collapsed"
+# --- MODEL YUKLEME VE HAZIRLIK ---
+@st.cache_resource
+def load_trained_model():
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
+    # ResNet18 mimarisini tanimlama
+    model = models.resnet18(weights=None)
+    num_ftrs = model.fc.in_features
+    model.fc = nn.Sequential(
+        nn.Dropout(0.3),
+        nn.Linear(num_ftrs, 2)
     )
     
+    # Egitilmis agirlıkları yukleme
+    try:
+        model.load_state_dict(torch.load("art_detector_model.pth", map_location=device))
+        model.to(device)
+        model.eval()
+        return model, device
+    except Exception as e:
+        st.error(f"Model yuklenirken hata olustu: {e}")
+        return None, device
+
+model, device = load_trained_model()
+
+# Görsel Ön İşleme Transformatörü
+transform = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    transforms.Normalize(
+        mean=[0.485, 0.456, 0.406],
+        std=[0.229, 0.224, 0.225]
+    )
+])
+
+# --- BASSLIK VE ARAYUZ ---
+st.title("🎨 AI vs. Human Art Detector")
+st.write("Yuklediginiz gorselin bir insan sanatci tarafindan mi cizildigini yoksa Yapay Zeka tarafindan mi uretildigini analiz edin.")
+st.divider()
+
+# Çift Sütunlu Düzen
+col_left, col_right = st.columns([1, 1], gap="large")
+
+with col_left:
+    st.subheader("📁 Gorsel Yukleme")
+    uploaded_file = st.file_uploader("Bir gorsel secin veya buraya surukleyin...", type=["jpg", "jpeg", "png", "webp"])
+    
     if uploaded_file is not None:
-        image = Image.open(uploaded_file)
-        st.image(image, use_container_width=True, caption=f"Yüklenen: {uploaded_file.name}")
-        
-        # 2. Görseli Analiz Et Butonu
-        analyze_btn = st.button("⚡ Görseli Analiz Et", type="primary", use_container_width=True)
+        image = Image.open(uploaded_file).convert("RGB")
+        st.image(image, caption="Yuklenen Gorsel", use_container_width=True)
+        analyze_btn = st.button("🔍 Gorseli Analiz Et", type="primary", use_container_width=True)
     else:
         analyze_btn = False
 
 with col_right:
-    # 3. Detaylar Kutusu
-    st.subheader("📋 Detaylar")
-    with st.container(border=True):
-        if uploaded_file is not None:
-            # Otomatik Benzersiz Analiz ID'si ve Detaylar
-            analysis_id = str(uuid.uuid4())[:8].upper()
-            st.markdown(f"**Eser Analiz ID:** `SAI-{analysis_id}`")
-            st.markdown(f"**Proje Adi:** Sanat AI Detector v1")
-            st.markdown(f"**Dosya Adi:** `{uploaded_file.name}`")
-            st.markdown(f"**Çözünürlük:** {image.size[0]} x {image.size[1]} px")
-            st.markdown(f"**Format / Boyut:** {image.format} ({round(uploaded_file.size / 1024, 1)} KB)")
-        else:
-            st.info("Görsel yüklendiğinde eser ID'si ve teknik detaylar burada görünecektir.")
-
-    st.write("") # Dikey boşluk
-    
-    # 4. Sonuçlar ve Durum Işıkları Kutusu
-    st.subheader("📊 Sonuçlar")
+    st.subheader("📊 Analiz Sonuclari")
     
     with st.container(border=True):
         if analyze_btn and uploaded_file is not None:
             with st.spinner("Model taraniyor ve analiz ediliyor..."):
-                time.sleep(1) # Şık bir yükleme efekti
+                time.sleep(0.5)
                 
-    # --- MODEL TAHMİNİ (Gerçek Model Bağlantısı) ---
-# Modeline görseli besle (örnek PyTorch/PIL tahmin bloğu)
-input_tensor = transform(image).unsqueeze(0).to(device)
-
-with torch.no_grad():
-    output = model(input_tensor)
-    # Model çıktına göre olasılık hesabı (örnek: Softmax veya Sigmoid)
-    probabilities = torch.softmax(output, dim=1)
-    ai_score = probabilities[0][1].item() # AI sınıfının indeksi 1 varsayılırsa
-
-human_score = 1.0 - ai_score            
+                # Model Tahmini
+                input_tensor = transform(image).unsqueeze(0).to(device)
                 
-                # Durum Işığı ve Karar Mantığı
+                with torch.no_grad():
+                    output = model(input_tensor)
+                    probabilities = torch.softmax(output, dim=1)
+                    ai_score = probabilities[0][1].item()
+                
+                human_score = 1.0 - ai_score
+                
+                # Durum Isigi ve Karar Mantigi
                 if ai_score >= 0.50:
-                    status_html = '<p style="font-size:18px; font-weight:bold;"><span class="status-dot red-dot"></span>Tespit: YAPAY ZEKÂ ÜRETİMİ (AI)</p>'
+                    status_html = '<p style="font-size:18px; font-weight:bold;"><span class="status-dot red-dot"></span>Tespit: YAPAY ZEKA URETIMI (AI)</p>'
                     st.markdown(status_html, unsafe_allow_html=True)
-                    st.error(f"Bu görsel %{ai_score * 100:.1f} ihtimalle AI tarafindan üretilmiştir.")
+                    st.error(f"Bu gorsel %{ai_score * 100:.1f} ihtimalle AI tarafindan uretilmistir.")
                 else:
-                    status_html = '<p style="font-size:18px; font-weight:bold;"><span class="status-dot green-dot"></span>Tespit: İNSAN YAPIMI ESER</p>'
+                    status_html = '<p style="font-size:18px; font-weight:bold;"><span class="status-dot green-dot"></span>Tespit: INSAN YAPIMI ESER</p>'
                     st.markdown(status_html, unsafe_allow_html=True)
-                    st.success(f"Bu görsel %{human_score * 100:.1f} ihtimalle bir insan sanatçiya aittir.")
+                    st.success(f"Bu gorsel %{human_score * 100:.1f} ihtimalle bir insan sanatciya aittir.")
                 
                 st.divider()
                 
                 # Güven Oranı Metrikleri
-                st.write("**Tespit Güven Orani:**")
-                st.progress(ai_score if ai_score >= 0.50 else human_score)
+                st.write("**Tespit Guven Orani:**")
+                progress_val = ai_score if ai_score >= 0.50 else human_score
+                st.progress(progress_val)
                 
                 col_m1, col_m2 = st.columns(2)
-                col_m1.metric("AI İhtimali", f"%{ai_score * 100:.1f}")
-                col_m2.metric("İnsan İhtimali", f"%{human_score * 100:.1f}")
-
+                col_m1.metric("AI Ihtimali", f"%{ai_score * 100:.1f}")
+                col_m2.metric("Insan Ihtimali", f"%{human_score * 100:.1f}")
         else:
-            # Bekleme Durumundaki Işık (Gri)
+            # Bekleme Durumundaki Isik (Gri)
             st.markdown('<p style="font-weight:bold; color:#777;"><span class="status-dot gray-dot"></span>Analiz Bekleniyor...</p>', unsafe_allow_html=True)
-            st.caption("Görseli yükledikten sonra 'Görseli Analiz Et' butonuna basarak sonuçlari görebilirsiniz.")
+            st.caption("Gorseli yukledikten sonra 'Gorseli Analiz Et' butonuna basarak sonuclari gorebilirsiniz.")
