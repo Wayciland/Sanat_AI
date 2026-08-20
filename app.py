@@ -77,9 +77,17 @@ with col_right:
             with st.spinner("Model taraniyor ve analiz ediliyor..."):
                 time.sleep(1) # Şık bir yükleme efekti
                 
-                # --- MODEL TAHMİNİ (Kendi model çıktın ile burayı bağlayabilirsin) ---
-                ai_score = 0.88  # Örnek AI skoru (%88)
-                human_score = 1.0 - ai_score
+    # --- MODEL TAHMİNİ (Gerçek Model Bağlantısı) ---
+# Modeline görseli besle (örnek PyTorch/PIL tahmin bloğu)
+input_tensor = transform(image).unsqueeze(0).to(device)
+
+with torch.no_grad():
+    output = model(input_tensor)
+    # Model çıktına göre olasılık hesabı (örnek: Softmax veya Sigmoid)
+    probabilities = torch.softmax(output, dim=1)
+    ai_score = probabilities[0][1].item() # AI sınıfının indeksi 1 varsayılırsa
+
+human_score = 1.0 - ai_score            
                 
                 # Durum Işığı ve Karar Mantığı
                 if ai_score >= 0.50:
