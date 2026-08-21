@@ -56,8 +56,8 @@ def load_trained_model():
     try:
         import os
 # ...
-        MODEL_PATH = os.path.join(os.path.dirname(__file__), "art_detector_model.pth")
-        model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
+        model_path = os.path.join(os.path.dirname(__file__), "sanat_modeli.pth")
+        model.load_state_dict(torch.load(model_path, map_location=device))
         model.eval()
         return model, device
     except Exception as e:
