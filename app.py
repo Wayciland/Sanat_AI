@@ -176,4 +176,4 @@ with st.expander("⚖️ Yasal Haklar, Kullanim Koşullari ve Sorumluluk Reddi")
     * Bu platformu kullanan her birey, elde edilen sonuçlari üçüncü şahislari karalamak, telif ihlali iddiasinda bulunmak veya karalama kampanyalarinda kesin delil olarak kullanmamayi kabul etmiş sayilir.
     """)
 
-st.caption("© 2026 AI vs Human Art Detector. Tüm haklari saklidir.")
+sst.caption("© 2026 AI vs Human Art Detector. Tüm haklari saklidir.")
