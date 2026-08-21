@@ -1,9 +1,10 @@
+import os
+import time
 import streamlit as st
 import torch
 import torch.nn as nn
 from torchvision import models, transforms
 from PIL import Image
-import time
 
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(
@@ -43,23 +44,36 @@ st.markdown("""
 @st.cache_resource
 def load_trained_model():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model_path = os.path.join(os.path.dirname(__file__), "sanat_modeli.pth")
     
-    # ResNet18 mimarisini tanimlama
-    model = models.resnet18(weights=None)
-    num_ftrs = model.fc.in_features
-    model.fc = nn.Sequential(
-        nn.Dropout(0.3),
-        nn.Linear(num_ftrs, 2)
-    )
-    
-    # Egitilmis agirlıkları yukleme
     try:
-        import os
-# ...
-        model_path = os.path.join(os.path.dirname(__file__), "sanat_modeli.pth")
-        model.load_state_dict(torch.load(model_path, map_location=device))
+        if not os.path.exists(model_path):
+            st.error("Model dosyasi ('sanat_modeli.pth') ana dizinde bulunamadi!")
+            return None, device
+
+        state_dict = torch.load(model_path, map_location=device)
+        
+        # state_dict icindeki katman isimlerine gore mimari tespiti
+        if any("features" in key for key in state_dict.keys()):
+            model = models.efficientnet_b0(weights=None)
+            num_ftrs = model.classifier[1].in_features
+            model.classifier = nn.Sequential(
+                nn.Dropout(0.3),
+                nn.Linear(num_ftrs, 2)
+            )
+        else:
+            model = models.resnet18(weights=None)
+            num_ftrs = model.fc.in_features
+            model.fc = nn.Sequential(
+                nn.Dropout(0.3),
+                nn.Linear(num_ftrs, 2)
+            )
+            
+        model.load_state_dict(state_dict)
+        model.to(device)
         model.eval()
         return model, device
+        
     except Exception as e:
         st.error(f"Model yuklenirken hata olustu: {e}")
         return None, device
@@ -76,7 +90,7 @@ transform = transforms.Compose([
     )
 ])
 
-# --- BASSLIK VE ARAYUZ ---
+# --- BASLIK VE ARAYUZ ---
 st.title("🎨 AI vs. Human Art Detector")
 st.write("Yuklediginiz gorselin bir insan sanatci tarafindan mi cizildigini yoksa Yapay Zeka tarafindan mi uretildigini analiz edin.")
 st.divider()
@@ -100,39 +114,42 @@ with col_right:
     
     with st.container(border=True):
         if analyze_btn and uploaded_file is not None:
-            with st.spinner("Model taraniyor ve analiz ediliyor..."):
-                time.sleep(0.5)
-                
-                # Model Tahmini
-                input_tensor = transform(image).unsqueeze(0).to(device)
-                
-                with torch.no_grad():
-                    output = model(input_tensor)
-                    probabilities = torch.softmax(output, dim=1)
-                    ai_score = probabilities[0][1].item()
-                
-                human_score = 1.0 - ai_score
-                
-                # Durum Isigi ve Karar Mantigi
-                if ai_score >= 0.50:
-                    status_html = '<p style="font-size:18px; font-weight:bold;"><span class="status-dot red-dot"></span>Tespit: YAPAY ZEKA URETIMI (AI)</p>'
-                    st.markdown(status_html, unsafe_allow_html=True)
-                    st.error(f"Bu gorsel %{ai_score * 100:.1f} ihtimalle AI tarafindan uretilmistir.")
-                else:
-                    status_html = '<p style="font-size:18px; font-weight:bold;"><span class="status-dot green-dot"></span>Tespit: INSAN YAPIMI ESER</p>'
-                    st.markdown(status_html, unsafe_allow_html=True)
-                    st.success(f"Bu gorsel %{human_score * 100:.1f} ihtimalle bir insan sanatciya aittir.")
-                
-                st.divider()
-                
-                # Güven Oranı Metrikleri
-                st.write("**Tespit Guven Orani:**")
-                progress_val = ai_score if ai_score >= 0.50 else human_score
-                st.progress(progress_val)
-                
-                col_m1, col_m2 = st.columns(2)
-                col_m1.metric("AI Ihtimali", f"%{ai_score * 100:.1f}")
-                col_m2.metric("Insan Ihtimali", f"%{human_score * 100:.1f}")
+            if model is None:
+                st.error("Model yuklenemedigi icin analiz yapilamiyor. Lutfen 'sanat_modeli.pth' dosyasini kontrol edin.")
+            else:
+                with st.spinner("Model taraniyor ve analiz ediliyor..."):
+                    time.sleep(0.5)
+                    
+                    # Model Tahmini
+                    input_tensor = transform(image).unsqueeze(0).to(device)
+                    
+                    with torch.no_grad():
+                        output = model(input_tensor)
+                        probabilities = torch.softmax(output, dim=1)
+                        ai_score = probabilities[0][1].item()
+                    
+                    human_score = 1.0 - ai_score
+                    
+                    # Durum Isigi ve Karar Mantigi
+                    if ai_score >= 0.50:
+                        status_html = '<p style="font-size:18px; font-weight:bold;"><span class="status-dot red-dot"></span>Tespit: YAPAY ZEKA URETIMI (AI)</p>'
+                        st.markdown(status_html, unsafe_allow_html=True)
+                        st.error(f"Bu gorsel %{ai_score * 100:.1f} ihtimalle AI tarafindan uretilmistir.")
+                    else:
+                        status_html = '<p style="font-size:18px; font-weight:bold;"><span class="status-dot green-dot"></span>Tespit: INSAN YAPIMI ESER</p>'
+                        st.markdown(status_html, unsafe_allow_html=True)
+                        st.success(f"Bu gorsel %{human_score * 100:.1f} ihtimalle bir insan sanatciya aittir.")
+                    
+                    st.divider()
+                    
+                    # Güven Oranı Metrikleri
+                    st.write("**Tespit Guven Orani:**")
+                    progress_val = ai_score if ai_score >= 0.50 else human_score
+                    st.progress(progress_val)
+                    
+                    col_m1, col_m2 = st.columns(2)
+                    col_m1.metric("AI Ihtimali", f"%{ai_score * 100:.1f}")
+                    col_m2.metric("Insan Ihtimali", f"%{human_score * 100:.1f}")
         else:
             # Bekleme Durumundaki Isik (Gri)
             st.markdown('<p style="font-weight:bold; color:#777;"><span class="status-dot gray-dot"></span>Analiz Bekleniyor...</p>', unsafe_allow_html=True)
