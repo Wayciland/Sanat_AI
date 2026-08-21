@@ -115,13 +115,14 @@ with col_right:
     with st.container(border=True):
         if analyze_btn and uploaded_file is not None:
             if model is None:
-                st.error("Model yuklenemedigi icin analiz yapilamiyor. Lutfen 'sanat_modeli.pth' dosyasini kontrol edin.")
+                st.error("Model yüklenemedi.")
             else:
-                with st.spinner("Model taraniyor ve analiz ediliyor..."):
-                    time.sleep(0.5)
+                with st.spinner("Analiz ediliyor..."):
+                    # Görseli RAM'de hızlıca boyutlandırarak işleme süresini düşür
+                    image_resized = image.copy()
+                    image_resized.thumbnail((512, 512))
                     
-                    # Model Tahmini
-                    input_tensor = transform(image).unsqueeze(0).to(device)
+                    input_tensor = transform(image_resized).unsqueeze(0).to(device)
                     
                     with torch.no_grad():
                         output = model(input_tensor)
@@ -129,6 +130,8 @@ with col_right:
                         ai_score = probabilities[0][1].item()
                     
                     human_score = 1.0 - ai_score
+                    
+                    # Sonuç gösterimleri...
                     
                     # Durum Isigi ve Karar Mantigi
                     if ai_score >= 0.50:
