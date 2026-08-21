@@ -157,3 +157,23 @@ with col_right:
             # Bekleme Durumundaki Isik (Gri)
             st.markdown('<p style="font-weight:bold; color:#777;"><span class="status-dot gray-dot"></span>Analiz Bekleniyor...</p>', unsafe_allow_html=True)
             st.caption("Gorseli yukledikten sonra 'Gorseli Analiz Et' butonuna basarak sonuclari gorebilirsiniz.")
+            st.caption("Gorseli yukledikten sonra 'Gorseli Analiz Et' butonuna basarak sonuclari gorebilirsiniz.")
+
+# --- YASAL HAKLAR VE KULLANIM KOŞULLARI (FOOTER) ---
+st.divider()
+
+with st.expander("⚖️ Yasal Haklar, Kullanim Koşullari ve Sorumluluk Reddi"):
+    st.markdown("""
+    **1. Hizmetin Niteliği ve Sorumluluk Reddi**
+    * Bu uygulama, yapay zeka ve makine öğrenimi modelleri (Derin Öğrenme) kullanarak görseller üzerinde olasiliksal analizler gerçekleştirir.
+    * Sunulan analiz sonuçlari yalnizca tahmin ve bilgilendirme amaçlidir; %100 kesinlik taşimaz ve hukuki, telif hakki veya resmi bir kanit niteliği **taşimaz**.
+
+    **2. Telif Haklari ve Veri Gizliliği**
+    * Kullancilar tarafindan yüklenen görseller sunucuda kalici olarak saklanmaz, yalnizca analiz süresince geçici bellekte işlenir.
+    * Yüklenen görsellerin telif ve mülkiyet haklari tamamen yükleyen kullanicilara aittir. Sistem, yüklenen içerikler üzerinde hiçbir hak talep etmez.
+
+    **3. Kullanim Şartlari**
+    * Bu platformu kullanan her birey, elde edilen sonuçlari üçüncü şahislari karalamak, telif ihlali iddiasinda bulunmak veya karalama kampanyalarinda kesin delil olarak kullanmamayi kabul etmiş sayilir.
+    """)
+
+st.caption("© 2026 AI vs Human Art Detector. Tüm haklari saklidir.")
