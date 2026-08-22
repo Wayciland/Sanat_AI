@@ -14,15 +14,16 @@ def indir_bing(arama_terimi, klasor_adi, limit=120):
     bing_crawler.crawl(keyword=arama_terimi, max_num=limit)
 
 if __name__ == "__main__":
-    print("=== ENIMERA LENS: DİJİTAL VE GELENEKSEL VERİ TOPLAYICI ===")
+    print("=== ENIMERA LENS: DİJİTAL İNSAN SANATI ODAKLI TOPLAYICI ===")
     
-    # 1. Yapay Zeka Sanatı
-    indir_bing("midjourney v6 digital art", "dataset/ai", limit=120)
-    indir_bing("stable diffusion xl portrait", "dataset/ai", limit=120)
+    # 1. Yapay Zeka Sanatı (Yapay Zeka Dijital Çizimleri)
+    indir_bing("midjourney v6 digital art portrait", "dataset/ai", limit=120)
+    indir_bing("stable diffusion xl anime digital illustration", "dataset/ai", limit=120)
     
-    # 2. İnsan Sanatı (Geleneksel + Dijital Tablet)
-    indir_bing("louvre museum oil painting scan", "dataset/insan", limit=120)
-    indir_bing("classical impressionism canvas painting", "dataset/insan", limit=120)
-    indir_bing("digital tablet concept art process human artist", "dataset/insan", limit=120) # Dijital İnsan Sanatı
+    # 2. İnsan Sanatı (Ağırlıklı Dijital Tablet ve Lineart Çizimleri)
+    indir_bing("digital 2d portrait painting human artist", "dataset/insan", limit=120)
+    indir_bing("clip studio paint digital illustration process", "dataset/insan", limit=120)
+    indir_bing("digital character concept art speedpaint human", "dataset/insan", limit=120)
+    indir_bing("traditional oil painting museum scan", "dataset/insan", limit=120)
     
-    print("\n[BAŞARILI] Dijital insan sanati da veri setine başariyla eklendi!")
+    print("\n[BAŞARILI] Dijital insan sanati ağirlikli veri seti indirildi!")
